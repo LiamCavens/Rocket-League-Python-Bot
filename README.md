@@ -1,11 +1,6 @@
-# RLBotPythonExample
+# Rocket League Python Bot
+
 Example of a python bot using the RLBot framework
-
-## Installation
-
-### Video guide
-
-https://www.youtube.com/watch?v=UjsQFNN0nSA
 
 ### Plain instructions
 
