@@ -4,32 +4,48 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 
 
-class PythonExample(BaseAgent):
+class RocketBot(BaseAgent):
+    def __init__(self, name, team, index):
+        super().__init__(name, team, index)
+        self.controller = SimpleControllerState()
 
-    def initialize_agent(self):
-        #This runs once before the bot starts up
-        self.controller_state = SimpleControllerState()
+        #Game Data
+        self.bot_pos = None
+        self.bot_rot = None
+
+    def aim(self, target_x, target_y):
+        angle_between_bot_and_target = math.atan2(target_y - self.bot_pos.y,
+                                                  target_x - self.bot_pos.x)
+
+        angle_front_to_target = angle_between_bot_and_target - self.bot_yaw
+
+        # Correct the values
+        if angle_front_to_target < -math.pi:   
+            angle_front_to_target += 2 * math.pi
+        if angle_front_to_target > math.pi:
+            angle_front_to_target -= 2 * math.pi
+
+        if angle_front_to_target < math.radians(-10):
+            # If the target is more than 10 degrees right from the center steer left
+            self.controller.steer = -1
+        elif angle_front_to_target > math.radians(10):  
+            # If the target is more than 10 degrees left from the center steer right
+            self.controller.steer = 1
+        else:
+            self.controller.steer = 0
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        ball_location = Vector2(packet.game_ball.physics.location.x, packet.game_ball.physics.location.y)
+        self.bot_yaw = packet.game_cars[self.team].physics.rotation.yaw
+        self.bot_pos = packet.game_cars[self.team].physics.location
 
-        my_car = packet.game_cars[self.index]
-        car_location = Vector2(my_car.physics.location.x, my_car.physics.location.y)
-        car_direction = get_car_facing_vector(my_car)
-        car_to_ball = ball_location - car_location
+        ball_pos = packet.game_ball.physics.location
+        self.aim(ball_pos.x, ball_pos.y)
 
-        steer_correction_radians = car_direction.correction_to(car_to_ball)
+        self.controller.throttle = 1
 
-        if steer_correction_radians > 0:
-            # Positive radians in the unit circle is a turn to the left.
-            turn = -1.0  # Negative value for a turn to the left.
-        else:
-            turn = 1.0
+        return self.controller
 
-        self.controller_state.throttle = 1.0
-        self.controller_state.steer = turn
-
-        return self.controller_state
+    
 
 
 class Vector2:
