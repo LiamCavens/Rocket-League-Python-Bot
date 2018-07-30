@@ -19,12 +19,16 @@ class Agent: # do not change class name, team index name or get get_output_vecto
         # Sixth Element - Jump
         # Seventh Element - Boost
         # Eigth Element - Handbrake
-        
+
+
+def distance(x1, y1, x2, y2):
+        return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
 class RocketBot(BaseAgent):
     def __init__(self, name, team, index):
         super().__init__(name, team, index)
         self.controller = SimpleControllerState()
-
+        self.DISTANCE_TO_DODGE = 500
         #Contants
         self.DODGE_TIME = 0.25
 
@@ -68,18 +72,38 @@ class RocketBot(BaseAgent):
                 self.should_dodge = False
             else:
                 self.on_second_jump = True
-                self.next_dodge_time = time.time() + self.DODGE_TIME        
+                self.next_dodge_time = time.time() + self.DODGE_TIME  
+
+  
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         self.bot_yaw = packet.game_cars[self.team].physics.rotation.yaw
         self.bot_pos = packet.game_cars[self.index].physics.location
-
         ball_pos = packet.game_ball.physics.location
+
+         # Blue has their goal at -5000 (Y axis) and orange has their goal at 5000 (Y axis). This means that:
+        # - Blue is behind the ball if the ball's Y axis is greater than blue's Y axis
+        # - Orange is behind the ball if the ball's Y axis is smaller than orange's Y axis
+        
+        self.controller.throttle = 0.8
+
+        if (self.index == 0 and self.bot_pos.y < ball_pos.y) or (self.index == 1 and self.bot_pos.y > ball_pos.y):
+            self.aim(ball_pos.x, ball_pos.y)
+            if distance(self.bot_pos.x, self.bot_pos.y, ball_pos.x, ball_pos.y) < self.DISTANCE_TO_DODGE:
+                self.should_dodge = True
+        else:
+            if self.team == 0:
+                # Blue team's goal is located at (0, -5000)
+                self.aim(0, -5000)
+            else:
+            # Orange team's goal is located at (0, 5000)
+                self.aim(0, 5000)
+
         self.aim(ball_pos.x, ball_pos.y)
 
         self.controller.jump = 0
         self.check_for_dodge()
-        self.controller.throttle = 1
+        
 
         return self.controller
 
