@@ -1,4 +1,5 @@
 import math
+import time
 
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
@@ -24,9 +25,17 @@ class RocketBot(BaseAgent):
         super().__init__(name, team, index)
         self.controller = SimpleControllerState()
 
+        #Contants
+        self.DODGE_TIME = 0.25
+
         #Game Data
         self.bot_pos = None
         self.bot_rot = None
+
+        #Dodging
+        self.should_dodge = False
+        self.on_second_jump = False
+        self.next_dodge_time = 0
 
     def aim(self, target_x, target_y):
         angle_between_bot_and_target = math.atan2(target_y - self.bot_pos.y,
@@ -49,19 +58,30 @@ class RocketBot(BaseAgent):
         else:
             self.controller.steer = 0
 
+    def check_for_dodge(self):
+        if self.should_dodge and time.time() > self.next_dodge_time:
+            self.controller.jump = True
+            self.controller.pitch = -1
+
+            if self.on_second_jump:
+                self.on_second_jump = False
+                self.should_dodge = False
+            else:
+                self.on_second_jump = True
+                self.next_dodge_time = time.time() + self.DODGE_TIME        
+
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         self.bot_yaw = packet.game_cars[self.team].physics.rotation.yaw
-        self.bot_pos = packet.game_cars[self.team].physics.location
+        self.bot_pos = packet.game_cars[self.index].physics.location
 
         ball_pos = packet.game_ball.physics.location
         self.aim(ball_pos.x, ball_pos.y)
 
+        self.controller.jump = 0
+        self.check_for_dodge()
         self.controller.throttle = 1
 
         return self.controller
-
-    
-
 
 class Vector2:
     def __init__(self, x=0, y=0):
