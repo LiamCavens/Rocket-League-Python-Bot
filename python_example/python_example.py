@@ -53,9 +53,11 @@ class RocketBot(BaseAgent):
         if angle_front_to_target > math.pi:
             angle_front_to_target -= 2 * math.pi
 
-        if angle_front_to_target < math.radians(-10):
+        if angle_front_to_target < math.radians(-10) and > math.radians(-5):
             # If the target is more than 10 degrees right from the center steer left
             self.controller.steer = -1
+        elif angle_front_to_target < math.radians(-5):
+            self.controller.steer = -0.5
         elif angle_front_to_target > math.radians(10):  
             # If the target is more than 10 degrees left from the center steer right
             self.controller.steer = 1
