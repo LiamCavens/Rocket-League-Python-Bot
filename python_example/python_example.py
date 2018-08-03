@@ -63,6 +63,8 @@ class RocketBot(BaseAgent):
             self.controller.steer = 1
         elif angle_front_to_target > math.radians(5):
             self.controller.steer = 0.5
+        elif angle_front_to_target > math.radians(110) and < math.radians(180):
+            self.controller.handbrake = 1
         else:
             self.controller.steer = 0
 
